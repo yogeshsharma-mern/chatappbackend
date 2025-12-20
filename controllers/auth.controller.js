@@ -13,8 +13,11 @@ export const signupUser = async (req, res) => {
             return res.status(400).json({ error: "User already exist" });
         }
 
-        const boyProfilePic = `https://avatar.iran.liara.run/public/boy?username=${username}`;
-        const girlProfilePic = `https://avatar.iran.liara.run/public/girl?username=${username}`;
+        // const boyProfilePic = `https://avatar.iran.liara.run/public/boy?username=${username}`;
+        // const girlProfilePic = `https://avatar.iran.liara.run/public/girl?username=${username}`;
+        const boyProfilePic = `https://api.dicebear.com/6.x/adventurer/svg?seed=${username}`;
+const girlProfilePic = `https://api.dicebear.com/6.x/adventurer/svg?seed=${username}-girl`;
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = new usermodel({
             fullName,

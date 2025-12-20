@@ -16,6 +16,7 @@ app.use(
     origin: [
       "http://localhost:5173",
       "http://192.0.0.2:5173",
+      "https://chatwithrandom.vercel.app/"
     //   "http://192.168.1.5:5173",
     ],
     credentials: true,
@@ -29,10 +30,15 @@ app.use("/auth", authroutes);
 app.use("/api/messages",messageRoutes);
 app.use("/api/users",userRoutes);
 
+const PORT = process.env.PORT || 8000;
 
-server.listen(process.env.PORT, () => {
-    connectToMongodb();
-    console.log(`server is running on port ${process.env.PORT}`);
-})
+const startServer = async () => {
+  await connectToMongodb();
 
+  server.listen(PORT, () => {
+    console.log(`server is running on port ${PORT}`);
+  });
+};
+
+startServer();
 

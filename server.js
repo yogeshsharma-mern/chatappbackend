@@ -16,7 +16,7 @@ app.use(
     origin: [
       "http://localhost:5173",
       "http://192.0.0.2:5173",
-      "https://chatwithrandom.vercel.app"
+      "https://chatwithrandomguy.vercel.app"
     ],
     credentials: true,
   })

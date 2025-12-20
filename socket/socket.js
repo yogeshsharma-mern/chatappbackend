@@ -56,7 +56,7 @@ const io = new Server(server, {
     cors: {
       origin: [
       "http://localhost:5173",
-      "https://chatwithrandom.vercel.app"
+      "https://chatwithrandomguy.vercel.app"
     ],
     credentials: true,
         methods: ["GET", "POST"],

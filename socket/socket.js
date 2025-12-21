@@ -57,7 +57,7 @@ const io = new Server(server, {
       origin: [
       "http://localhost:5173",
       "https://chatwithrandomguy.vercel.app",
-      "https://chatwithguy.vercel.app"
+      "https://chatwithguys.vercel.app"
     ],
     credentials: true,
         methods: ["GET", "POST"],

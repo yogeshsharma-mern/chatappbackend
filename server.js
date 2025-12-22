@@ -4,6 +4,7 @@ import authroutes from "./routes/auth.route.js";
 import { connectToMongodb } from "./db/connectToMongodb.js";
 import messageRoutes from "./routes/message.route.js";
 import userRoutes from "./routes/user.route.js";
+import conversationRoute from "./routes/conversation.route.js"
 import cors from "cors";
 import { app,server } from "./socket/socket.js";
 
@@ -30,6 +31,7 @@ app.use(
 app.use("/auth", authroutes);
 app.use("/api/messages",messageRoutes);
 app.use("/api/users",userRoutes);
+app.use("/api",conversationRoute);
 
 const PORT = process.env.PORT || 8000;
 

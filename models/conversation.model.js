@@ -8,6 +8,19 @@ participants:[
      ref:'user',
    }
 ],
+lastMessage:{
+  type:String,
+  default:""
+},
+ lastMessageAt: {
+    type: Date,
+    default: null,
+  },
+  unreadCount: {
+    type: Map,
+    of: Number, // { userId: count }
+    default: {},
+  },
 messages:[
     {
         type:mongoose.Schema.Types.ObjectId,

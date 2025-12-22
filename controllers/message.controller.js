@@ -95,13 +95,13 @@ export const sendMessage = async (req, res) => {
     conversation.lastMessage = message;
     conversation.lastMessageAt = newMessage.createdAt;
 
-    // increment unread for receiver
+    // 🔴 increment unread for receiver
     conversation.unreadCount.set(
       receiverId.toString(),
       (conversation.unreadCount.get(receiverId.toString()) || 0) + 1
     );
 
-    // reset sender unread
+    // 🟢 reset sender unread
     conversation.unreadCount.set(senderId.toString(), 0);
 
     await conversation.save();
@@ -110,17 +110,28 @@ export const sendMessage = async (req, res) => {
       conversation.unreadCount.get(receiverId.toString()) || 0;
 
     const receiverSocketId = userSocketMap[receiverId.toString()];
+    const senderSocketId = userSocketMap[senderId.toString()];
 
+    const payload = {
+      conversationId: conversation._id,
+      senderId: senderId.toString(),
+      receiverId: receiverId.toString(),
+      lastMessage: message,
+      lastMessageAt: newMessage.createdAt,
+      unreadCount: receiverUnread,
+    };
+
+    // 🔴 receiver gets unread++
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("new-message", newMessage);
+      io.to(receiverSocketId).emit("conversation-update", payload);
+    }
 
-      io.to(receiverSocketId).emit("conversation-update", {
-        conversationId: conversation._id,
-        senderId,
-        receiverId,
-        lastMessage: message,
-        lastMessageAt: newMessage.createdAt,
-        unreadCount: receiverUnread,
+    // 🟢 sender gets realtime update (unread = 0)
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("conversation-update", {
+        ...payload,
+        unreadCount: 0,
       });
     }
 
@@ -130,6 +141,7 @@ export const sendMessage = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 
 
 export const getMessages = async (req, res) => {

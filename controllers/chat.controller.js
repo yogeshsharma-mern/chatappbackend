@@ -36,6 +36,7 @@ export const getChatUsers = async (req, res) => {
       return {
         _id: user._id,
         fullName: user.fullName,
+         conversationId: conv?._id, 
         profilePic: user.profilePic,
         lastMessage: conv?.lastMessage || "",
         lastMessageAt: conv?.lastMessageAt || null,

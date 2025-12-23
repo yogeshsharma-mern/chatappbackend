@@ -18,7 +18,8 @@ app.use(
       "http://localhost:5173",
       "http://192.0.0.2:5173",
       "https://chatwithrandomguy.vercel.app",
-      "https://chatwithguys.vercel.app"
+      "https://chatwithguys.vercel.app",
+      "http://localhost:5174"
     ],
     credentials: true,
   })

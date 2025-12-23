@@ -142,6 +142,44 @@ export const sendMessage = async (req, res) => {
   }
 };
 
+// controllers/message.controller.js
+export const markMessagesSeen = async (req, res) => {
+  try {
+    const myUserId = req.user._id;
+    const { conversationId } = req.params;
+
+    const conversation = await conversationModel.findById(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ message: "Conversation not found" });
+    }
+
+    // 🔴 unread reset
+    conversation.unreadCount.set(myUserId.toString(), 0);
+    await conversation.save();
+
+    // find other user
+    const otherUserId = conversation.participants.find(
+      id => id.toString() !== myUserId.toString()
+    );
+
+    const otherSocketId = userSocketMap[otherUserId?.toString()];
+
+    // 🟢 sender ko notify (realtime)
+    if (otherSocketId) {
+      io.to(otherSocketId).emit("conversation-update", {
+        conversationId,
+        senderId: myUserId.toString(),
+        receiverId: otherUserId.toString(),
+        unreadCount: 0,
+      });
+    }
+
+    res.status(200).json({ success: true });
+  } catch (err) {
+    console.error("markMessagesSeen error", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 
 export const getMessages = async (req, res) => {

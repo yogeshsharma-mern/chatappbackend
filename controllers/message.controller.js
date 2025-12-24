@@ -165,14 +165,20 @@ export const markMessagesSeen = async (req, res) => {
     const otherSocketId = userSocketMap[otherUserId?.toString()];
 
     // 🟢 sender ko notify (realtime)
-    if (otherSocketId) {
-      io.to(otherSocketId).emit("conversation-update", {
-        conversationId,
-        senderId: myUserId.toString(),
-        receiverId: otherUserId.toString(),
-        unreadCount: 0,
-      });
-    }
+    // if (otherSocketId) {
+    //   io.to(otherSocketId).emit("messages-seen", {
+    //     conversationId,
+    //     senderId: myUserId.toString(),
+    //     receiverId: otherUserId.toString(),
+    //     unreadCount: 0,
+    //   });
+    // }
+if (otherSocketId) {
+  io.to(otherSocketId).emit("messages-seen", {
+    conversationId,
+    seenBy: myUserId.toString(),
+  });
+}
 
     res.status(200).json({ success: true });
   } catch (err) {

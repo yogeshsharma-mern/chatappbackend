@@ -187,11 +187,8 @@ export const sendMessage = async (req, res) => {
         ?.has(receiverId.toString());
 
     // ✅ decide status
-    const status = isReceiverViewingChat
-      ? "seen"
-      : receiverSocketId
-      ? "delivered"
-      : "sent";
+const status = receiverSocketId ? "delivered" : "sent";
+
 
     const newMessage = await messageModel.create({
       conversationId: conversation._id,

@@ -1,6 +1,7 @@
 import conversationModel from "../models/conversation.model.js";
 import messageModel from "../models/message.model.js";
-import { io, userSocketMap } from "../socket/socket.js";
+import { io, userSocketMap, activeConversations } from "../socket/socket.js";
+
 
 // export const sendMessage = async (req, res) => {
 //   try {
@@ -78,6 +79,88 @@ import { io, userSocketMap } from "../socket/socket.js";
 // };
 
 // controllers/message.controller.js
+// export const sendMessage = async (req, res) => {
+//   try {
+//     const { message } = req.body;
+//     const { id: receiverId } = req.params;
+//     const senderId = req.user._id;
+
+//     let conversation = await conversationModel.findOne({
+//       participants: { $all: [senderId, receiverId] },
+//     });
+
+//     if (!conversation) {
+//       conversation = await conversationModel.create({
+//         participants: [senderId, receiverId],
+//       });
+//     }
+
+//     // ✅ sockets FIRST
+//     const receiverSocketId = userSocketMap[receiverId.toString()];
+//     const senderSocketId = userSocketMap[senderId.toString()];
+
+//     // ✅ decide status BEFORE saving
+//     const status = receiverSocketId ? "delivered" : "sent";
+
+//     // ✅ create message ONCE
+// const newMessage = await messageModel.create({
+//   conversationId: conversation._id, // ✅ MUST
+//   senderId,
+//   receiverId,
+//   message,
+//   status,
+// });
+
+
+//     // ✅ update conversation
+//     conversation.messages.push(newMessage._id);
+//     conversation.lastMessage = message;
+//     conversation.lastMessageAt = newMessage.createdAt;
+
+//     // 🔴 increment unread for receiver
+//     conversation.unreadCount.set(
+//       receiverId.toString(),
+//       (conversation.unreadCount.get(receiverId.toString()) || 0) + 1
+//     );
+
+//     // 🟢 reset sender unread
+//     conversation.unreadCount.set(senderId.toString(), 0);
+
+//     await conversation.save();
+
+//     const receiverUnread =
+//       conversation.unreadCount.get(receiverId.toString()) || 0;
+
+//     const payload = {
+//       conversationId: conversation._id,
+//       senderId: senderId.toString(),
+//       receiverId: receiverId.toString(),
+//       lastMessage: message,
+//       lastMessageAt: newMessage.createdAt,
+//       unreadCount: receiverUnread,
+//     };
+
+//     // 🔴 receiver realtime update
+//     if (receiverSocketId) {
+//       io.to(receiverSocketId).emit("new-message", newMessage);
+//       io.to(receiverSocketId).emit("conversation-update", payload);
+//     }
+
+//     // 🟢 sender realtime update
+//     if (senderSocketId) {
+//       io.to(senderSocketId).emit("new-message", newMessage);
+//       io.to(senderSocketId).emit("conversation-update", {
+//         ...payload,
+//         unreadCount: 0,
+//       });
+//     }
+
+//     res.status(201).json(newMessage);
+//   } catch (error) {
+//     console.log("error in message controller", error.message);
+//     res.status(500).json({ error: "Internal Server Error" });
+//   }
+// };
 export const sendMessage = async (req, res) => {
   try {
     const { message } = req.body;
@@ -94,41 +177,45 @@ export const sendMessage = async (req, res) => {
       });
     }
 
-    // ✅ sockets FIRST
     const receiverSocketId = userSocketMap[receiverId.toString()];
     const senderSocketId = userSocketMap[senderId.toString()];
 
-    // ✅ decide status BEFORE saving
-    const status = receiverSocketId ? "delivered" : "sent";
+    // ✅ CHECK: is receiver viewing this conversation?
+    const isReceiverViewingChat =
+      activeConversations
+        .get(conversation._id.toString())
+        ?.has(receiverId.toString());
 
-    // ✅ create message ONCE
-const newMessage = await messageModel.create({
-  conversationId: conversation._id, // ✅ MUST
-  senderId,
-  receiverId,
-  message,
-  status,
-});
+    // ✅ decide status
+    const status = isReceiverViewingChat
+      ? "seen"
+      : receiverSocketId
+      ? "delivered"
+      : "sent";
 
+    const newMessage = await messageModel.create({
+      conversationId: conversation._id,
+      senderId,
+      receiverId,
+      message,
+      status,
+    });
 
-    // ✅ update conversation
     conversation.messages.push(newMessage._id);
     conversation.lastMessage = message;
     conversation.lastMessageAt = newMessage.createdAt;
 
-    // 🔴 increment unread for receiver
-    conversation.unreadCount.set(
-      receiverId.toString(),
-      (conversation.unreadCount.get(receiverId.toString()) || 0) + 1
-    );
+    // ✅ ONLY increment unread if receiver NOT viewing chat
+    if (!isReceiverViewingChat) {
+      conversation.unreadCount.set(
+        receiverId.toString(),
+        (conversation.unreadCount.get(receiverId.toString()) || 0) + 1
+      );
+    }
 
-    // 🟢 reset sender unread
+    // sender unread always 0
     conversation.unreadCount.set(senderId.toString(), 0);
-
     await conversation.save();
-
-    const receiverUnread =
-      conversation.unreadCount.get(receiverId.toString()) || 0;
 
     const payload = {
       conversationId: conversation._id,
@@ -136,22 +223,30 @@ const newMessage = await messageModel.create({
       receiverId: receiverId.toString(),
       lastMessage: message,
       lastMessageAt: newMessage.createdAt,
-      unreadCount: receiverUnread,
+      unreadCount: conversation.unreadCount.get(receiverId.toString()) || 0,
     };
 
-    // 🔴 receiver realtime update
+    // 🔴 receiver updates
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("new-message", newMessage);
       io.to(receiverSocketId).emit("conversation-update", payload);
     }
 
-    // 🟢 sender realtime update
+    // 🟢 sender updates
     if (senderSocketId) {
       io.to(senderSocketId).emit("new-message", newMessage);
       io.to(senderSocketId).emit("conversation-update", {
         ...payload,
         unreadCount: 0,
       });
+
+      // ✅ instant blue tick if receiver already viewing
+      if (isReceiverViewingChat) {
+        io.to(senderSocketId).emit("messages-seen", {
+          conversationId: conversation._id,
+          seenBy: receiverId.toString(),
+        });
+      }
     }
 
     res.status(201).json(newMessage);

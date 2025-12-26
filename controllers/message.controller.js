@@ -102,12 +102,14 @@ export const sendMessage = async (req, res) => {
     const status = receiverSocketId ? "delivered" : "sent";
 
     // ✅ create message ONCE
-    const newMessage = await messageModel.create({
-      senderId,
-      receiverId,
-      message,
-      status,
-    });
+const newMessage = await messageModel.create({
+  conversationId: conversation._id, // ✅ MUST
+  senderId,
+  receiverId,
+  message,
+  status,
+});
+
 
     // ✅ update conversation
     conversation.messages.push(newMessage._id);
@@ -203,17 +205,57 @@ export const sendMessage = async (req, res) => {
 //   }
 // };
 
+// export const markMessagesSeen = async (req, res) => {
+//   try {
+//     const myUserId = req.user._id;
+//     const { conversationId } = req.params;
+
+//     const conversation = await conversationModel.findById(conversationId);
+//     if (!conversation) {
+//       return res.status(404).json({ message: "Conversation not found" });
+//     }
+
+//     // ✅ 1. UPDATE MESSAGE STATUS → seen
+//     await messageModel.updateMany(
+//       {
+//         conversationId,
+//         receiverId: myUserId,
+//         status: { $ne: "seen" },
+//       },
+//       { status: "seen" }
+//     );
+
+//     // ✅ 2. RESET UNREAD COUNT
+//     conversation.unreadCount.set(myUserId.toString(), 0);
+//     await conversation.save();
+
+//     // ✅ 3. FIND OTHER USER (SENDER)
+//     const otherUserId = conversation.participants.find(
+//       id => id.toString() !== myUserId.toString()
+//     );
+
+//     const otherSocketId = userSocketMap[otherUserId?.toString()];
+
+//     // ✅ 4. NOTIFY SENDER (BLUE TICK)
+//     if (otherSocketId) {
+//       io.to(otherSocketId).emit("messages-seen", {
+//         conversationId,
+//         seenBy: myUserId.toString(),
+//       });
+//     }
+
+//     res.status(200).json({ success: true });
+//   } catch (err) {
+//     console.error("markMessagesSeen error", err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
 export const markMessagesSeen = async (req, res) => {
   try {
     const myUserId = req.user._id;
     const { conversationId } = req.params;
 
-    const conversation = await conversationModel.findById(conversationId);
-    if (!conversation) {
-      return res.status(404).json({ message: "Conversation not found" });
-    }
-
-    // ✅ 1. UPDATE MESSAGE STATUS → seen
+    // ✅ update DB (THIS FIXES REFRESH ISSUE)
     await messageModel.updateMany(
       {
         conversationId,
@@ -223,18 +265,17 @@ export const markMessagesSeen = async (req, res) => {
       { status: "seen" }
     );
 
-    // ✅ 2. RESET UNREAD COUNT
+    const conversation = await conversationModel.findById(conversationId);
+    if (!conversation) return res.sendStatus(404);
+
     conversation.unreadCount.set(myUserId.toString(), 0);
     await conversation.save();
 
-    // ✅ 3. FIND OTHER USER (SENDER)
     const otherUserId = conversation.participants.find(
       id => id.toString() !== myUserId.toString()
     );
 
     const otherSocketId = userSocketMap[otherUserId?.toString()];
-
-    // ✅ 4. NOTIFY SENDER (BLUE TICK)
     if (otherSocketId) {
       io.to(otherSocketId).emit("messages-seen", {
         conversationId,
@@ -242,9 +283,9 @@ export const markMessagesSeen = async (req, res) => {
       });
     }
 
-    res.status(200).json({ success: true });
+    res.sendStatus(200);
   } catch (err) {
-    console.error("markMessagesSeen error", err);
+    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };

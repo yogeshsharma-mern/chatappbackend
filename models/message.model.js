@@ -2,11 +2,11 @@ import mongoose from "mongoose";
 
 
 const messageSchema = new mongoose.Schema({
-     conversationId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "conversation",
-    required: true,
-  },
+    conversationId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "conversation",
+        required: true,
+    },
     senderId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "user",
@@ -21,13 +21,27 @@ const messageSchema = new mongoose.Schema({
     message:
     {
         type: String,
-        required: true
+        default: ""
     },
+    audioUrl: {
+        type: String,
+        default: null,
+    },
+    audioDuration: {
+        type: Number, // seconds
+        default: null,
+    },
+    type: {
+        type: String,
+        enum: ["text", "audio"],
+        default: "text",
+    },
+
     status: {
-    type: String,
-    enum: ["sent", "delivered", "seen"],
-    default: "sent"
-  }
+        type: String,
+        enum: ["sent", "delivered", "seen"],
+        default: "sent"
+    }
 }, { timestamps: true })
 
 

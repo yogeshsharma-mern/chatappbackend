@@ -16,7 +16,7 @@ const uploadOnCloudniary = async (localFilePath) => {
     if (!localFilePath) return null;
     const response = cloudinary.uploader
       .upload(localFilePath, {
-        resource_type: auto
+        resource_type: "auto"
       })
     // .then(result => console.log(result));
     console.log("file is uploaded on cloudinary", response.url);
@@ -26,9 +26,10 @@ const uploadOnCloudniary = async (localFilePath) => {
   }
 }
 
+export {uploadOnCloudniary};
 
 // for vedio and audio upload
-cloudinary.v2.uploader
+// cloudinary.v2.uploader
 // .upload("dog.mp4", {
 //   resource_type: "video", 
 //   public_id: "my_dog",

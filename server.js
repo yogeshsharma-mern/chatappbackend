@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import dotenv from "dotenv";
 import authroutes from "./routes/auth.route.js";
@@ -25,15 +26,15 @@ app.use(
   })
 );
 
-
-
-
-
 app.use("/auth", authroutes);
 app.use("/api/messages",messageRoutes);
 app.use("/api/users",userRoutes);
 app.use("/api",conversationRoute);
 app.use("/api/chat", chatroutes);
+app.get("/",(req,res)=>
+{
+  res.send("Api is running");
+});
 
 
 const PORT = process.env.PORT || 8000;

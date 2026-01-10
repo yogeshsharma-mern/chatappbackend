@@ -1,6 +1,7 @@
 import conversationModel from "../models/conversation.model.js";
 import messageModel from "../models/message.model.js";
 import { io, userSocketMap, activeConversations } from "../socket/socket.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
 
 // export const sendMessage = async (req, res) => {
@@ -164,6 +165,7 @@ import { io, userSocketMap, activeConversations } from "../socket/socket.js";
 export const sendMessage = async (req, res) => {
   try {
     const { message } = req.body;
+  console.log("req.files",req.file);
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
 
@@ -187,24 +189,33 @@ export const sendMessage = async (req, res) => {
         ?.has(receiverId.toString());
 
     // ✅ decide status
-const status = isReceiverViewingChat
-  ? "seen"
-  : receiverSocketId
-  ? "delivered"
-  : "sent";
-
-
+    const status = isReceiverViewingChat
+      ? "seen"
+      : receiverSocketId
+        ? "delivered"
+        : "sent";
+    let imageUrl = null;
+    let type = "text";
+    if (req.file) {
+      const cloudinaryResponse = await uploadOnCloudinary(req.file.path);
+      imageUrl = cloudinaryResponse.secure_url;
+      console.log("cloudinaryResponse", cloudinaryResponse);
+      type = "image";
+    }
 
     const newMessage = await messageModel.create({
       conversationId: conversation._id,
       senderId,
       receiverId,
-      message,
+      message: type === "text" ? message : "",
+      imageUrl,
+      type,
       status,
     });
 
     conversation.messages.push(newMessage._id);
-    conversation.lastMessage = message;
+    conversation.lastMessage =
+      type === "image" ? "📷 Image" : message;
     conversation.lastMessageAt = newMessage.createdAt;
 
     // ✅ ONLY increment unread if receiver NOT viewing chat
@@ -223,10 +234,11 @@ const status = isReceiverViewingChat
       conversationId: conversation._id,
       senderId: senderId.toString(),
       receiverId: receiverId.toString(),
-      lastMessage: message,
+      lastMessage: type === "image" ? "📷 Image" : message,
       lastMessageAt: newMessage.createdAt,
       unreadCount: conversation.unreadCount.get(receiverId.toString()) || 0,
     };
+
 
     // 🔴 receiver updates
     if (receiverSocketId) {
@@ -388,18 +400,18 @@ export const markMessagesSeen = async (req, res) => {
 };
 
 export const getMessages = async (req, res) => {
-    try {
-        const { id: userTochatId } = req.params;
-        const senderId = req.user._id;
-        const conversation = await conversationModel.findOne({
-            participants: { $all: [senderId, userTochatId] }
-        }).populate("messages");
-        if (!conversation) {
-            return res.status(200).josn([]);
-        }
-        res.status(200).json(conversation.messages);
-    } catch (error) {
-        console.log("error in getmessages controller", error.message);
-        res.status(500).json({ error: "Internal Server Error" });
+  try {
+    const { id: userTochatId } = req.params;
+    const senderId = req.user._id;
+    const conversation = await conversationModel.findOne({
+      participants: { $all: [senderId, userTochatId] }
+    }).populate("messages");
+    if (!conversation) {
+      return res.status(200).josn([]);
     }
+    res.status(200).json(conversation.messages);
+  } catch (error) {
+    console.log("error in getmessages controller", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 }

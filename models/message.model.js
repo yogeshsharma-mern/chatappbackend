@@ -23,6 +23,10 @@ const messageSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
+    imageUrl: {
+        type: String,
+        default: null
+    },
     audioUrl: {
         type: String,
         default: null,
@@ -33,7 +37,7 @@ const messageSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ["text", "audio"],
+        enum: ["text", "audio","image"],
         default: "text",
     },
 

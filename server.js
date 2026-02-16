@@ -7,7 +7,7 @@ import messageRoutes from "./routes/message.route.js";
 import userRoutes from "./routes/user.route.js";
 import conversationRoute from "./routes/conversation.route.js"
 import cors from "cors";
-import { app,server } from "./socket/socket.js";
+import { app, server } from "./socket/socket.js";
 import chatroutes from "./routes/chat.routes.js"
 
 // const app = express();
@@ -27,12 +27,11 @@ app.use(
 );
 
 app.use("/auth", authroutes);
-app.use("/api/messages",messageRoutes);
-app.use("/api/users",userRoutes);
-app.use("/api",conversationRoute);
+app.use("/api/messages", messageRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api", conversationRoute);
 app.use("/api/chat", chatroutes);
-app.get("/",(req,res)=>
-{
+app.get("/", (req, res) => {
   res.send("Api is running");
 });
 

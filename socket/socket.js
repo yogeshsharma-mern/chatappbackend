@@ -118,15 +118,28 @@ const io = new Server(server, {
 const userSocketMap = {};              // userId -> socketId
 const activeConversations = new Map(); // conversationId -> Set(userId)
 
+
 io.on("connection", (socket) => {
+  // console.log("socket",socket);
   console.log("Socket connected:", socket.id);
 
   // 🔹 SETUP USER
   socket.on("setup", (userId) => {
+
     socket.userId = userId;
+    //before
+    // socket = { id: "XYZ123" }
+    //after
+    //     socket = { 
+    //   id: "XYZ123",
+    //   userId: "user123"
+    // }
     userSocketMap[userId] = socket.id;
 
     io.emit("online-users", Object.keys(userSocketMap));
+    console.log(
+      "userSocketMap", userSocketMap
+    );
   });
 
   // 🔹 JOIN CONVERSATION
@@ -145,6 +158,46 @@ io.on("connection", (socket) => {
     activeConversations.get(conversationId)?.delete(socket.userId);
   });
 
+  socket.on("typing", ({ conversationId }) => {
+    console.log("converstationId",conversationId);
+  if (!socket.userId) return;
+
+  const users = activeConversations.get(conversationId);
+  console.log("users",users);
+  if (!users) return;
+
+  users.forEach(userId => {
+    if (userId !== socket.userId) {
+      const socketId = userSocketMap[userId];
+      if (socketId) {
+        io.to(socketId).emit("typing", {
+          conversationId,
+          userId: socket.userId,
+        });
+      }
+    }
+  });
+});
+socket.on("stop-typing", ({ conversationId }) => {
+  
+  if (!socket.userId) return;
+
+  const users = activeConversations.get(conversationId);
+  if (!users) return;
+
+  users.forEach(userId => {
+    if (userId !== socket.userId) {
+      const socketId = userSocketMap[userId];
+      if (socketId) {
+        io.to(socketId).emit("stop-typing", {
+          conversationId,
+          userId: socket.userId,
+        });
+      }
+    }
+  });
+});
+
   // 🔹 DISCONNECT
   socket.on("disconnect", () => {
     if (socket.userId) {
@@ -156,5 +209,6 @@ io.on("connection", (socket) => {
     console.log("User disconnected:", socket.userId);
   });
 });
+
 
 export { app, server, io, userSocketMap, activeConversations };

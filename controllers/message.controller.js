@@ -278,8 +278,39 @@ export const sendMessage = async (req, res) => {
       };
 
       try {
-        await admin.messaging().sendEachForMulticast(notificationPayload);
-        console.log("✅ Push notification sent");
+const response = await admin.messaging().sendEachForMulticast(notificationPayload);
+
+const tokensToDelete = [];
+
+response.responses.forEach((r, index) => {
+
+  if (!r.success) {
+
+    console.log("❌ Token error:", r.error?.code);
+
+    const badToken = notificationPayload.tokens?.[index];
+
+    if (!badToken) return;   // ⭐ prevents crash
+
+    if (r.error.code === "messaging/registration-token-not-registered") {
+      tokensToDelete.push(badToken);
+    }
+  }
+});
+
+
+if (tokensToDelete.length) {
+  await User.updateMany(
+    { fcmTokens: { $in: tokensToDelete } },
+    { $unset: { fcmTokens: "" } }
+  );
+
+  console.log("🧹 Removed dead tokens:", tokensToDelete.length);
+}
+
+
+// console.log("✅ Firebase Response:", JSON.stringify(fcmResponse, null, 2));
+
       } catch (err) {
         console.error("❌ FCM error:", err.message);
       }

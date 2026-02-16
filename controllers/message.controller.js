@@ -2,6 +2,9 @@ import conversationModel from "../models/conversation.model.js";
 import messageModel from "../models/message.model.js";
 import { io, userSocketMap, activeConversations } from "../socket/socket.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import admin from "../firebase.js";
+import User from "../models/user.model.js";
+
 
 
 // export const sendMessage = async (req, res) => {
@@ -262,6 +265,26 @@ export const sendMessage = async (req, res) => {
         });
       }
     }
+
+    const receiver = await User.findById(receiverId);
+
+    if (receiver?.fcmTokens?.length && !isReceiverViewingChat) {
+      const notificationPayload = {
+        notification: {
+          title: "New Message 💬",
+          body: type === "image" ? "📷 Image" : message,
+        },
+        tokens: receiver.fcmTokens,
+      };
+
+      try {
+        await admin.messaging().sendEachForMulticast(notificationPayload);
+        console.log("✅ Push notification sent");
+      } catch (err) {
+        console.error("❌ FCM error:", err.message);
+      }
+    }
+
 
     res.status(201).json(newMessage);
   } catch (error) {

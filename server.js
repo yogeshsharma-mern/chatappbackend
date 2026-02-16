@@ -9,6 +9,8 @@ import conversationRoute from "./routes/conversation.route.js"
 import cors from "cors";
 import { app, server } from "./socket/socket.js";
 import chatroutes from "./routes/chat.routes.js"
+import notificationRoutes from "./routes/notification.route.js";
+
 
 // const app = express();
 dotenv.config();
@@ -31,6 +33,7 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api", conversationRoute);
 app.use("/api/chat", chatroutes);
+app.use("/api/notifications", notificationRoutes);
 app.get("/", (req, res) => {
   res.send("Api is running");
 });

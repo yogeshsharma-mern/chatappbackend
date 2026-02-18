@@ -4,10 +4,16 @@ import Conversation from "../models/conversation.model.js";
 export const getChatUsers = async (req, res) => {
   try {
     const myUserId = req.user._id;
+    const loggedInUserGender = req.user.gender;
+
+
+    const oppositeGender =
+      loggedInUserGender === "male" ? "female" : "male";
+    console.log("opposite", oppositeGender);
 
     // 1️⃣ ALL USERS except me
     const users = await User.find(
-      { _id: { $ne: myUserId } },
+      { _id: { $ne: myUserId }, gender: oppositeGender },
       { fullName: 1, profilePic: 1 }
     );
 
@@ -36,7 +42,7 @@ export const getChatUsers = async (req, res) => {
       return {
         _id: user._id,
         fullName: user.fullName,
-         conversationId: conv?._id, 
+        conversationId: conv?._id,
         profilePic: user.profilePic,
         lastMessage: conv?.lastMessage || "",
         lastMessageAt: conv?.lastMessageAt || null,

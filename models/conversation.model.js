@@ -2,17 +2,17 @@ import mongoose from "mongoose";
 
 
 const conversationSchema = new mongoose.Schema({
-participants:[
-   {
-     type:mongoose.Schema.Types.ObjectId,
-     ref:'user',
-   }
-],
-lastMessage:{
-  type:String,
-  default:""
-},
- lastMessageAt: {
+  participants: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'user',
+    }
+  ],
+  lastMessage: {
+    type: String,
+    default: ""
+  },
+  lastMessageAt: {
     type: Date,
     default: null,
   },
@@ -21,14 +21,14 @@ lastMessage:{
     of: Number, // { userId: count }
     default: {},
   },
-messages:[
+  messages: [
     {
-        type:mongoose.Schema.Types.ObjectId,
-        ref:'message',
-        default:[]
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'message',
+      default: []
     }
-]
-},{timestamps:true});
+  ]
+}, { timestamps: true });
 
 
 const conversationModel = mongoose.model("conversation", conversationSchema);

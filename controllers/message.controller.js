@@ -168,7 +168,7 @@ import User from "../models/user.model.js";
 export const sendMessage = async (req, res) => {
   try {
     const { message } = req.body;
-  console.log("req.files",req.file);
+    console.log("req.files", req.file);
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
 
@@ -278,38 +278,38 @@ export const sendMessage = async (req, res) => {
       };
 
       try {
-const response = await admin.messaging().sendEachForMulticast(notificationPayload);
+        const response = await admin.messaging().sendEachForMulticast(notificationPayload);
 
-const tokensToDelete = [];
+        const tokensToDelete = [];
 
-response.responses.forEach((r, index) => {
+        response.responses.forEach((r, index) => {
 
-  if (!r.success) {
+          if (!r.success) {
 
-    console.log("❌ Token error:", r.error?.code);
+            console.log("❌ Token error:", r.error?.code);
 
-    const badToken = notificationPayload.tokens?.[index];
+            const badToken = notificationPayload.tokens?.[index];
 
-    if (!badToken) return;   // ⭐ prevents crash
+            if (!badToken) return;   // ⭐ prevents crash
 
-    if (r.error.code === "messaging/registration-token-not-registered") {
-      tokensToDelete.push(badToken);
-    }
-  }
-});
-
-
-if (tokensToDelete.length) {
-  await User.updateMany(
-    { fcmTokens: { $in: tokensToDelete } },
-    { $unset: { fcmTokens: "" } }
-  );
-
-  console.log("🧹 Removed dead tokens:", tokensToDelete.length);
-}
+            if (r.error.code === "messaging/registration-token-not-registered") {
+              tokensToDelete.push(badToken);
+            }
+          }
+        });
 
 
-// console.log("✅ Firebase Response:", JSON.stringify(fcmResponse, null, 2));
+        if (tokensToDelete.length) {
+          await User.updateMany(
+            { fcmTokens: { $in: tokensToDelete } },
+            { $unset: { fcmTokens: "" } }
+          );
+
+          console.log("🧹 Removed dead tokens:", tokensToDelete.length);
+        }
+
+
+        // console.log("✅ Firebase Response:", JSON.stringify(fcmResponse, null, 2));
 
       } catch (err) {
         console.error("❌ FCM error:", err.message);
